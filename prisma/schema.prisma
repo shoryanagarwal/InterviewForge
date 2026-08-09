@@ -25,6 +25,14 @@ enum Difficulty {
   HARD
 }
 
+
+enum InterviewType{
+  TECHNICAL
+  BEHAVIORAL
+  CODING
+
+
+}
 model Account {
   id                String  @id @default(cuid())
   userId            String  @map("user_id")
@@ -91,6 +99,7 @@ model Interview {
   score             Int?
   feedback          Json?
   questions         Question[]
+  interviewType     InterviewType
 }
 
 model Question {
@@ -106,4 +115,5 @@ model Question {
   updatedAt      DateTime  @updatedAt
   interview      Interview @relation(fields: [interviewId], references: [id])
   interviewId    String
+  questionNumber Int?
 }

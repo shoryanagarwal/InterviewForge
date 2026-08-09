@@ -1,28 +1,33 @@
-import LogOutButton from "./logOut"
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
-import {auth} from "@/auth"
-import {redirect} from "next/navigation"
+import DashboardNavbar from "@/components/dashboard/dashboard-navbar";
+import WelcomeSection from "@/components/dashboard/welcome-section";
+import ActionCards from "@/components/dashboard/action-card";
+import ProgressStats from "@/components/dashboard/progress-stats";
+import RecentInterviews from "@/components/dashboard/recent-interview";
+import DashboardFooter from "@/components/dashboard/footer";
 
+export default async function Dashboard() {
+  const session = await auth();
 
+  if (!session) {
+    redirect("/api/auth/signin");
+  }
 
+  return (
+    <main className="min-h-screen bg-[#080B14] text-white">
+      <DashboardNavbar session={session} />
 
-export default async  function DashboardPage(){
+      <WelcomeSection session={session} />
 
+      <ActionCards />
 
-    const session=await auth();
-    
+      <ProgressStats />
 
-        if(!session){
-            redirect("/api/auth/signin")
-        }
-    return(
-        <div>
-            <h1>{`Session is ${session.user?.name}`}</h1>
-            <h1>Dashboard</h1>
-            <p>Welcome to the dashboard!</p>
-            <LogOutButton/>
+      <RecentInterviews />
 
-        </div>
-    )
+      <DashboardFooter />
+    </main>
+  );
 }
-
