@@ -18,7 +18,13 @@ export async function POST(req: Request){
             
         const body =await req.json();
 
-        const {role,interviewType,difficulty,questionCount} = body;
+        const {
+            role,
+            interviewType,
+            difficulty,
+            questionCount,
+            resumeUrl
+        } = body;
 
         if(!role || !interviewType || !difficulty || !questionCount){
             return NextResponse.json(
@@ -34,6 +40,7 @@ export async function POST(req: Request){
                 interviewType,
                 difficulty,
                 numberOfQuestions:questionCount,
+                resumeUrl: resumeUrl || null,
 
 
             }
@@ -67,10 +74,7 @@ export async function POST(req: Request){
         
 
 
-        return NextResponse.json(
-            {message: "Interview created successfully",interview},
-            {status: 201}
-        )
+      
 
 
     }

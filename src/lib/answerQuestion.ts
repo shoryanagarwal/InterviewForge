@@ -13,6 +13,18 @@ export async function answerQuestion({question,expectedAnswer,userAnswer}:{quest
             You are an expert technical interviewer.
 
             Evaluate the candidate's answer against the given question and expected answer.
+            Evaluate the candidate's answer based on correctness,
+            approach, complexity, and whether it solves the given problem.
+
+            Do not require the candidate to use the exact approach
+            mentioned in expectedAnswer.
+
+            For coding questions:
+            - Accept multiple valid approaches.
+            - Check whether the solution actually solves the problem.
+            - Consider time and space complexity.
+            - Give a score from 0-10.
+            - Give concise feedback.
 
             Return ONLY valid JSON in this exact format:
             {
@@ -50,7 +62,11 @@ ${userAnswer}
         throw new Error("No response from the model")
     }
 
-    return JSON.parse(response) as {score:number,feedback:string}
+    const cleanedResponse = response
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    return JSON.parse(cleanedResponse) as {score:number,feedback:string}
    
 
 

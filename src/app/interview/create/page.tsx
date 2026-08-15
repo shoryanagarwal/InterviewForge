@@ -67,8 +67,61 @@ export default function InterviewSetup() {
         if(!role.trim()){
             alert("Please enter a target role.");
             return;
-        }
+        } 
     try{
+
+        let resumeKey:string|null=null;
+
+        if(resume){
+           const response=await fetch("/api/resume/uploadUrl",{
+            method:'POST',
+            headers:{
+                'Content-Type':'application/json'
+            },
+            body:JSON.stringify({
+                fileName:resume.name,
+                fileType:resume.type
+            })
+           }    
+            )
+        
+            const data=await response.json();
+
+            if(!response.ok){
+                alert(data.error || "Failed to get upload URL.");
+                return;
+            }
+
+            console.log("Upload URL:", data.uploadUrl);
+          console.log("S3 key:", data.key);
+          console.log("uploadUrl:", data.uploadUrl);
+          console.log("key:", data.key);
+
+
+          const uploadResume = await fetch(data.uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": resume.type,
+            },
+            body: resume,
+          });
+
+          console.log("S3 upload status:", uploadResume.status);
+          console.log("S3 upload ok:", uploadResume.ok);
+
+          if (!uploadResume.ok) {
+            const errorText = await uploadResume.text();
+            console.error("S3 upload error:", errorText);
+
+            alert("Failed to upload resume to S3.");
+            return;
+          }
+                  
+
+            resumeKey=data.key;
+          }
+
+
         const response=await fetch("/api/interview",{
             method:'POST',
             headers:{
@@ -78,7 +131,8 @@ export default function InterviewSetup() {
                 role:role,
                 interviewType:interviewType.toUpperCase(),
                 difficulty:difficulty.toUpperCase(),
-                questionCount:questionCount
+                questionCount:questionCount,
+                resumeUrl:resumeKey
             })
         })
 
