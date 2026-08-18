@@ -12,7 +12,7 @@ export async function GET(req:Request,{params}:{params:Promise<{interviewId:stri
 
             if(!session?.user?.id){
 
-                NextResponse.json({message:"Unauthorized"}, {status:401})
+                return NextResponse.json({message:"Unauthorized"}, {status:401})
             }
 
             const {interviewId} = await params;
@@ -45,6 +45,7 @@ export async function GET(req:Request,{params}:{params:Promise<{interviewId:stri
                     role:interview.role,
                     difficulty:interview.difficulty,
                     interviewType:interview.interviewType,
+                    feedback:interview.feedback
                 },
                 averageScore,
                 questions:interview.questions

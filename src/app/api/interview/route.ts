@@ -1,7 +1,8 @@
 import {NextResponse} from "next/server";
 import {auth} from "@/auth"
 import {prisma} from "@/lib/prisma"
-import {generateQuestion} from "@/lib/generateQuestion"
+import {generateQuestionBatch} from "@/lib/generateQuestion"
+import {ResumeText} from "@/lib/getResumeText"
 
 
 export async function POST(req: Request){
@@ -48,12 +49,51 @@ export async function POST(req: Request){
 
         })
 
-        const questions = await generateQuestion({
-            role,
-            difficulty,
-            interviewType,
-            questionCount
-        })
+        let resumeText:string|null=null;
+
+        if(resumeUrl){
+             resumeText = await ResumeText(resumeUrl);
+
+            console.log("========== RESUME TEXT ==========");
+            console.log(resumeText);
+            console.log("=================================");
+
+
+
+        }
+
+        const batchSize = 5;
+const totalBatches = Math.ceil(
+  questionCount / batchSize
+);
+
+const batches = [];
+
+for (let i = 0; i < totalBatches; i++) {
+  const remaining =
+    questionCount - i * batchSize;
+
+  const currentBatchSize = Math.min(
+    batchSize,
+    remaining
+  );
+
+  
+
+  const batch = await generateQuestionBatch({
+    role,
+    difficulty,
+    interviewType,
+    batchSize: currentBatchSize,
+    resumeText,
+    batchNumber: i + 1,
+    totalBatches,
+  });
+
+  batches.push(batch);
+}
+
+const questions = batches.flat();
 
         await prisma.question.createMany({
             data: questions.map((q:any,index:number)=>({
