@@ -1,4 +1,4 @@
-import {groq} from "@/lib/groq"
+import { groq } from "@/lib/groq";
 
 type GenerateQuestionParams = {
   role: string;
@@ -10,7 +10,6 @@ type GenerateQuestionParams = {
   totalBatches: number;
 };
 
-
 export async function generateQuestionBatch({
   role,
   difficulty,
@@ -21,9 +20,9 @@ export async function generateQuestionBatch({
   totalBatches,
 }: GenerateQuestionParams) {
   const prompt = `
-You are an expert technical interviewer designing a realistic ${interviewType} interview.
+You are an expert interviewer conducting a realistic software engineering interview.
 
-Your task is to generate exactly ${batchSize} unique interview questions for the following candidate configuration.
+Generate exactly ${batchSize} unique interview questions for the candidate.
 
 TARGET ROLE:
 ${role}
@@ -34,9 +33,122 @@ ${difficulty}
 INTERVIEW TYPE:
 ${interviewType}
 
-This is batch ${batchNumber} of ${totalBatches}.
+BATCH:
+${batchNumber} of ${totalBatches}
+
 Generate only ${batchSize} questions in this batch.
-Do not repeat questions that are likely to appear in other batches.
+Do not intentionally repeat questions from other batches.
+
+==================================================
+ROLE SELECTION RULE
+==================================================
+
+The TARGET ROLE is the primary source for determining the technical domain
+and subject matter of the interview.
+
+The user may enter ANY role.
+
+Examples include:
+- MERN Stack Developer
+- Full Stack Developer
+- Frontend Developer
+- Backend Developer
+- React Developer
+- Next.js Developer
+- Node.js Developer
+- Python Developer
+- Java Developer
+- C++ Developer
+- Android Developer
+- iOS Developer
+- DevOps Engineer
+- Cloud Engineer
+- Data Analyst
+- Data Engineer
+- Machine Learning Engineer
+- AI Engineer
+- Software Engineer
+
+These are only examples.
+
+Do NOT restrict InterviewForge to MERN, JavaScript, React, Node.js,
+or any other specific technology stack.
+
+Infer the most relevant and commonly expected concepts, technologies,
+tools, algorithms, and engineering practices from the TARGET ROLE.
+
+For example:
+
+If the role is MERN / Full Stack:
+focus on relevant frontend, backend, APIs, databases,
+authentication, real-time communication, and web engineering concepts.
+
+If the role is Python Backend:
+focus on Python, backend development, APIs, databases,
+async programming, frameworks, testing, and backend architecture.
+
+If the role is Java Backend:
+focus on Java, OOP, collections, concurrency,
+Spring/Spring Boot, REST APIs, databases, and JVM fundamentals.
+
+If the role is ML Engineer:
+focus on Python, machine learning fundamentals,
+data preprocessing, model evaluation, feature engineering,
+statistics, deployment, and ML systems.
+
+If the role is DevOps Engineer:
+focus on Linux, networking, Docker, CI/CD, cloud,
+monitoring, infrastructure, and deployment.
+
+These examples MUST NOT restrict the generator.
+For any other role, determine the appropriate domain yourself.
+
+Prefer widely expected concepts for the role.
+Do not invent obscure technologies simply because they can sometimes
+be associated with the role.
+
+==================================================
+DIFFICULTY RULES
+==================================================
+
+The difficulty should match a strong internship or junior candidate
+unless the selected difficulty explicitly requires more.
+
+EASY:
+- Fundamental concepts.
+- Commonly expected knowledge.
+- Direct questions.
+- Basic reasoning.
+- No obscure terminology.
+- No advanced internals.
+
+MEDIUM:
+- Appropriate for a strong internship or junior candidate.
+- Concepts commonly expected in undergraduate interviews.
+- May combine one or two familiar concepts.
+- Moderate reasoning.
+- Reasonable edge cases.
+- Practical understanding.
+- Do NOT require niche, obscure, or highly advanced knowledge.
+- Do NOT make a question difficult merely by using advanced terminology.
+
+HARD:
+- Intended for strong candidates.
+- Deeper reasoning.
+- Multiple interacting concepts.
+- Advanced optimization.
+- Advanced architecture, algorithms, or system design when appropriate.
+- Less common concepts may be used when relevant.
+
+IMPORTANT:
+If uncertain between two difficulty levels, choose the simpler one.
+
+Difficulty must come from reasoning and complexity,
+not from obscure terminology.
+
+==================================================
+RESUME RULES
+==================================================
 
 ${
   resumeText
@@ -44,132 +156,181 @@ ${
 CANDIDATE RESUME:
 ${resumeText}
 
-RESUME PERSONALIZATION RULES:
-- Use the resume as a source of factual context about the candidate.
-- You MUST NOT invent any project, technology, internship, responsibility, achievement, skill, or experience that is not explicitly supported by the resume.
-- Some questions should be personalized around projects, technologies, architecture decisions, implementation details, challenges, trade-offs, debugging, scalability, or lessons learned mentioned in the resume.
-- Resume-based questions must still be relevant to the target role and interview type.
-- Do not make every question resume-specific. Combine role-based questions with resume-based questions.
+Use the resume as factual context.
+
+Rules:
+- Never invent any project, technology, internship, responsibility,
+  achievement, skill, or experience.
+- Some questions should be personalized around projects, technologies,
+  decisions, implementation details, challenges, debugging,
+  trade-offs, scalability, or lessons explicitly supported by the resume.
+- Resume-based questions must remain relevant to the TARGET ROLE
+  and INTERVIEW TYPE.
+- Resume familiarity does NOT automatically increase difficulty.
+- If the resume contains an advanced technology, do not automatically
+  ask an advanced question unless the selected difficulty allows it.
+- Do not make every question resume-specific.
+- Combine role-based questions with resume-based questions.
 `
-  : `
-No resume was provided.
-Generate questions only from the target role, interview type, and difficulty.
+    : `
+NO RESUME PROVIDED.
+
+Generate questions using the TARGET ROLE,
+INTERVIEW TYPE, and DIFFICULTY only.
 `
 }
 
-GENERAL QUESTION QUALITY RULES:
-- Every question must be realistic for an actual software engineering interview.
-- Questions must match the requested difficulty.
-- Questions must test understanding, reasoning, problem solving, or practical engineering judgment.
+==================================================
+GENERAL QUALITY RULES
+==================================================
+
+- Every question must be realistic for an actual interview.
+- Every question must match the selected difficulty.
+- Questions must be relevant to the TARGET ROLE.
 - Avoid trivial questions.
-- Avoid duplicate concepts unless they test clearly different skills.
-- Cover different relevant topics across the batch.
-- Do not ask questions unrelated to the target role.
-- Do not make assumptions about the candidate that are not supported by the provided information.
+- Avoid obscure concepts unless appropriate for HARD difficulty.
+- Avoid duplicate questions.
+- Cover different topics across the batch.
+- Do not assume candidate experience without resume evidence.
+- Do not ask unrelated questions.
+- Do not repeat the same underlying concept unnecessarily.
 
-INTERVIEW TYPE RULES:
+Before returning every question, internally verify:
 
-TECHNICAL INTERVIEW:
-Generate conceptual and practical technical questions.
+1. Is it relevant to the target role?
+2. Is it appropriate for the selected difficulty?
+3. Would a strong internship/junior candidate reasonably be expected
+   to know this for EASY or MEDIUM?
+4. Is the question difficult because of reasoning rather than obscure knowledge?
+5. Does it test useful interview knowledge?
 
-For MERN / Full Stack roles, relevant areas include:
-- JavaScript
-- TypeScript
-- React
-- Next.js
-- Node.js
-- Express.js
-- MongoDB
-- PostgreSQL
-- REST APIs
-- Authentication and authorization
-- JWT
-- WebSockets and Socket.IO
-- asynchronous programming
-- event loop
-- caching
-- database design
-- indexing
-- transactions
-- performance optimization
-- security
-- error handling
+If any answer is NO, replace the question.
+
+==================================================
+TECHNICAL INTERVIEW
+==================================================
+
+Generate conceptual and practical technical interview questions
+specific to the TARGET ROLE.
+
+Technical questions should test:
+
+- understanding of important concepts
+- how technologies work
+- why a technology or approach is used
+- practical engineering decisions
+- trade-offs
 - debugging
-- backend architecture
-- frontend architecture
-- system design fundamentals
+- performance
+- security
+- architecture
+- common real-world problems
 
-Technical questions should focus on:
-- Why something works
-- How something works internally
-- Trade-offs
-- When to choose one approach over another
-- Real-world engineering decisions
-- Debugging and performance scenarios
+Select technical topics from the target role rather than from a
+fixed technology list.
+
+Examples only:
+
+For web development:
+frontend, backend, APIs, databases, authentication,
+browser concepts, performance, networking, architecture.
+
+For Python development:
+Python fundamentals, backend frameworks, APIs,
+databases, async programming, testing.
+
+For Java development:
+Java, OOP, collections, concurrency, Spring,
+APIs, databases, JVM concepts.
+
+For ML/AI:
+Python, ML fundamentals, data processing,
+model evaluation, feature engineering, deployment,
+ML systems.
+
+For DevOps:
+Linux, networking, containers, CI/CD, cloud,
+monitoring, infrastructure.
+
+Again, these are examples only.
 
 DO NOT generate:
 - competitive programming problems
 - DSA problems
-- "write a function" questions
-- simple array/string manipulation tasks
-- Input/Output/Constraints sections
+- "write a function" tasks
 - trivial syntax questions
+- simple array manipulation exercises
+- Input/Output/Constraints sections
 
-Examples of good technical questions:
-- Explain how Node.js handles asynchronous I/O.
-- What happens in the JavaScript event loop when a Promise is resolved?
-- How would you prevent unnecessary React re-renders?
-- What is the difference between authentication and authorization?
-- When would you choose PostgreSQL instead of MongoDB?
-- How does JWT authentication work and what are its security risks?
-- How would you scale a Socket.IO based application?
-- What is database indexing and when can an index hurt performance?
+==================================================
+CODING INTERVIEW
+==================================================
 
-CODING INTERVIEW:
-Generate actual algorithmic programming / DSA problems.
+Generate actual programming and algorithmic problems.
 
-The problem must require the candidate to design and implement an algorithm.
+The problem must require the candidate to design and implement
+a solution.
 
-Prefer common DSA patterns such as:
+Use algorithms and data structures appropriate for the selected difficulty.
+
+EASY:
+Prefer:
 - arrays
 - strings
 - hashing
-- two pointers
-- sliding window
-- binary search
-- stacks
-- queues
-- linked lists
-- trees
-- heaps
-- graphs
-- BFS
-- DFS
-- greedy algorithms
-- recursion
-- backtracking
-- dynamic programming
-- disjoint set union
+- simple two pointers
+- basic stacks/queues
+- basic linked lists
 
-Difficulty requirements:
-- EASY: straightforward use of a known data structure or basic algorithm.
-- MEDIUM: requires combining ideas, careful edge cases, or non-trivial optimization.
-- HARD: requires deeper algorithmic reasoning, multiple techniques, or advanced optimization.
+MEDIUM:
+Prefer:
+- arrays
+- strings
+- hashing
+- sliding window
+- two pointers
+- binary search
+- linked lists
+- stacks/queues
+- binary trees
+- BFS/DFS
+- heaps
+- standard greedy
+- basic backtracking
+- introductory dynamic programming
+
+Avoid for MEDIUM unless clearly justified:
+- advanced graph algorithms
+- advanced shortest path problems
+- minimum spanning tree
+- advanced dynamic programming
+- graph DP
+- advanced string algorithms
+- highly complex backtracking
+
+HARD:
+May include:
+- advanced graphs
+- shortest-path algorithms
+- MST / DSU
+- advanced dynamic programming
+- advanced data structures
+- complex backtracking
+- multi-technique algorithmic problems
 
 DO NOT generate:
 - React implementation tasks
 - Node.js implementation tasks
-- Express/API tasks
-- MongoDB queries
-- simple JavaScript syntax tasks
-- basic arithmetic
-- simple object property access
-- one-line function exercises
+- framework-specific implementation tasks
+- database query tasks
+- basic object property questions
+- trivial JavaScript syntax exercises
+- one-line coding exercises
 
 Every coding question MUST contain:
 
 Problem Statement:
-A complete competitive-programming-style description of the problem.
+A complete competitive-programming-style problem.
 
 Input:
 The exact input format.
@@ -178,84 +339,127 @@ Output:
 The exact output format.
 
 Constraints:
-At least 2 meaningful constraints that are consistent with the algorithm.
+At least 2 meaningful constraints consistent with the problem.
 
 Example 1:
 Input:
-A complete valid input.
+Complete valid input.
 
 Output:
-The correct output.
+Correct output.
 
 Example 2:
 Input:
-A complete valid input.
+Complete valid input.
 
 Output:
-The correct output.
+Correct output.
 
-The coding question must be detailed enough that another programmer can implement a solution without asking for clarification.
+CODING FORMATTING RULES:
+
+- Problem Statement, Input, Output, Constraints,
+  Example 1, and Example 2 must be separate sections.
+- Each section must appear on separate lines.
+- Use actual line breaks.
+- Do NOT output literal "\\n" characters.
+- Do NOT collapse the entire problem into one paragraph.
+- The problem must be readable directly by a candidate.
 
 EXPECTED ANSWER FOR CODING:
-Explain the intended algorithm, key idea, time complexity, and space complexity.
-Do not provide a full code solution unless explicitly requested.
 
-BEHAVIORAL INTERVIEW:
-Generate realistic behavioral and situational interview questions.
+Provide:
+- intended algorithm
+- key idea
+- time complexity
+- space complexity
+
+Do NOT provide full source code unless explicitly requested.
+
+==================================================
+BEHAVIORAL INTERVIEW
+==================================================
+
+Generate realistic behavioral and situational questions.
 
 Focus on:
 - teamwork
-- leadership
-- conflict resolution
 - communication
+- conflict resolution
+- leadership
 - ownership
 - failure
-- handling ambiguity
+- ambiguity
 - time management
 - decision making
+- adaptability
 - learning
-- adapting to new technology
-- project challenges
 - handling pressure
+- project experiences
 
-When the resume contains relevant projects or experiences:
-- personalize behavioral questions around those experiences
-- ask about the candidate's role, decisions, challenges, outcomes, or lessons learned
-- do not invent responsibilities
+If a resume is provided:
+- personalize questions around actual projects or experiences
+- ask about the candidate's role
+- ask about decisions and challenges
+- ask about outcomes and lessons learned
+- never invent responsibilities
 
-DO NOT generate coding problems.
-DO NOT generate purely theoretical technical questions.
+Behavioral questions should feel like real interview questions,
+not technical theory questions.
 
-QUESTION DISTRIBUTION:
-When a resume is provided, aim for approximately 60-70% role/interview-type questions and 30-40% resume-personalized questions.
-The exact distribution may vary when the batch size is small, but resume personalization should be visible.
+DO NOT generate:
+- coding problems
+- DSA problems
+- purely theoretical technical questions
 
-OUTPUT REQUIREMENT:
+==================================================
+QUESTION MIX
+==================================================
+
+If a resume exists:
+
+Approximately:
+- 60-70% role/interview-type questions
+- 30-40% resume-personalized questions
+
+For small batches, exact percentages are not required.
+
+The resume should visibly influence some questions,
+but the interview should still assess the target role.
+
+If there is no resume:
+all questions should be generated from role,
+interview type, and difficulty.
+
+==================================================
+OUTPUT REQUIREMENTS
+==================================================
+
 Return exactly ${batchSize} questions.
 
-Each question must contain:
-- topic
-- question
-- expectedAnswer
+Each question MUST contain:
 
-The question text for coding problems must preserve all required sections and line breaks.
+topic
+question
+expectedAnswer
 
-Do not output explanations outside the structured response.
+Return only the structured response.
 `;
 
   const completion = await groq.chat.completions.create({
     model: "openai/gpt-oss-120b",
+
     messages: [
       {
         role: "system",
         content:
-          "You are an expert interviewer that generates structured interview questions.",
+          "You are an expert interviewer who generates realistic, role-specific, appropriately difficult interview questions.",
       },
       {
         role: "user",
         content: prompt,
       },
     ],
+
     response_format: {
       type: "json_schema",
       json_schema: {
@@ -269,9 +473,15 @@ Do not output explanations outside the structured response.
               items: {
                 type: "object",
                 properties: {
-                  topic: { type: "string" },
-                  question: { type: "string" },
-                  expectedAnswer: { type: "string" },
+                  topic: {
+                    type: "string",
+                  },
+                  question: {
+                    type: "string",
+                  },
+                  expectedAnswer: {
+                    type: "string",
+                  },
                 },
                 required: [
                   "topic",
@@ -289,13 +499,26 @@ Do not output explanations outside the structured response.
     },
   });
 
-  const content = completion.choices[0]?.message?.content;
+  const content =
+    completion.choices[0]?.message?.content;
 
   if (!content) {
-    throw new Error("No content returned from Groq");
+    throw new Error(
+      "No content returned from Groq"
+    );
   }
 
   const parsed = JSON.parse(content);
+
+  if (
+    !parsed.questions ||
+    !Array.isArray(parsed.questions) ||
+    parsed.questions.length !== batchSize
+  ) {
+    throw new Error(
+      `Groq returned an invalid question batch. Expected ${batchSize} questions.`
+    );
+  }
 
   return parsed.questions;
 }
