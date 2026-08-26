@@ -36,8 +36,6 @@ export async function GET(req:Request,{params}:{params:Promise<{interviewId:stri
                 return NextResponse.json({message:"Interview not found"}, {status:404})
             }
 
-            const questions=interview?.questions.filter((ques)=>ques.score!==null);
-            const averageScore= questions.length > 0?questions.reduce((sum,q)=>sum+(q.score??0),0)/questions.length : 0;
 
             return NextResponse.json({
                 interview:{
@@ -47,7 +45,7 @@ export async function GET(req:Request,{params}:{params:Promise<{interviewId:stri
                     interviewType:interview.interviewType,
                     feedback:interview.feedback
                 },
-                averageScore,
+                averageScore:interview.score ?? 0,
                 questions:interview.questions
 
 

@@ -32,18 +32,21 @@ export default function HistoryPage(){
     
 
     useEffect(()=>{
+        console.log("useEffect triggered");
 
 
         async function fetchInterviews(){
 
             try{
+              console.log("Fetching interviews...");
                 const response=await fetch("/api/interview/history");
-
+                console.log("Response status:", response.status); // Log the response status
                 if(!response.ok){
                     throw new Error("Failed to fetch interviews");
                 }
 
                 const data=await response.json();
+                console.log("Fetched interviews:", data.interviews); // Log the fetched data
 
                 setInterviews(data.interviews);
 

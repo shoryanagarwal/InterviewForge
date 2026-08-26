@@ -10,12 +10,24 @@ import {
   Sparkles,
   Volume2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 export default function InterviewPage() {
+
+
   const router = useRouter();
   const { interviewId } = useParams();
+
+  const videoRef =useRef<HTMLVideoElement | null> (null);
+  const [mediaStream,setmediaaStream]=useState<MediaStream | null>(null);
+
+  const [cameraEnabled,setcameraEnabled]=useState(false);
+  const [cameraError,setcameraError]=useState<string | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [requestingCamera, setRequestingCamera] = useState(false);  
+  
+  const [micEnabled,setMicEnabled]=useState(false);
 
   const [isListening, setIsListening] = useState(false);
   const [interview, setInterview] = useState<any>(null);
@@ -26,6 +38,14 @@ export default function InterviewPage() {
 
   const currentQuestion =
     interview?.questions?.[currentQuestionIndex];
+
+
+  useEffect(()=>{
+    return()=>{
+      mediaStream?.getTracks().forEach((track)=>track.stop()); 
+    }
+  },[mediaStream])     
+
 
   // Fetch interview
   useEffect(() => {
@@ -54,12 +74,97 @@ export default function InterviewPage() {
     fetchInterview();
   }, [interviewId]);
 
+
+
+
+
+  useEffect(() => {
+  if (videoRef.current && mediaStream) {
+    videoRef.current.srcObject = mediaStream;
+  }
+}, [mediaStream, cameraReady]);
+
   // Load saved answer whenever question changes
+
+
+
   useEffect(() => {
     if (currentQuestion) {
       setAnswers(currentQuestion.userAnswer || "");
     }
   }, [currentQuestionIndex, currentQuestion]);
+
+
+  const toggleMic=()=>{
+    if(!mediaStream){
+      return;
+    }
+
+    const audioTracks=mediaStream.getAudioTracks()[0];
+    if(!audioTracks){
+      return;
+    }
+    audioTracks.enabled=!audioTracks.enabled;
+    setMicEnabled(audioTracks.enabled);
+  }
+
+ 
+  const requestCamera=async()=>{
+
+      try{
+        setRequestingCamera(true);
+        setcameraError(null);
+
+        const camerastream=await navigator.mediaDevices.getUserMedia({
+          video:true
+        })
+
+        let micTrack: MediaStreamTrack | null = null;
+
+        try{
+          const micStream=await navigator.mediaDevices.getUserMedia({
+            audio:true
+          })
+
+          micTrack=micStream.getAudioTracks()[0]?? null;
+        }
+        catch(error){
+          console.error("Microphone error:",error);
+          setMicEnabled(false);
+        }
+
+        const tracks=[
+          ...camerastream.getVideoTracks(),
+          ...(micTrack ? [micTrack] : [])
+        ]
+
+
+        const stream=new MediaStream(tracks);
+
+        setmediaaStream(stream);
+        setcameraEnabled(true);
+        setMicEnabled(Boolean(micTrack));
+        setCameraReady(true);
+
+      }
+      catch(error){
+        console.error("Camera error:",error);
+        setCameraReady(false);
+        setcameraError("Failed to access camera. Please check your permissions and try again.");
+
+      }
+      finally{
+        setRequestingCamera(false);
+      }
+
+
+  }
+
+
+
+
+
+
 
   const handleMarkAsComplete = async () => {
     if (!currentQuestion || !answers.trim()) {
@@ -176,6 +281,9 @@ export default function InterviewPage() {
 
   if (!interview || !currentQuestion) {
     return (
+
+
+
       <main className="flex min-h-screen items-center justify-center bg-[#05070D] text-white">
         <p className="text-sm text-red-400">
           Interview not found.
@@ -195,7 +303,40 @@ export default function InterviewPage() {
       interview.questions.length) *
     100;
 
-  return (
+  
+  return !cameraReady ? (
+    <main className="flex min-h-screen items-center justify-center bg-[#05070D] text-white">
+      <div className="w-full max-w-md rounded-2xl border border-white/[0.12] bg-[#0B0F1A] p-8 text-center">
+        <h1 className="text-xl font-semibold">
+          Ready to begin?
+        </h1>
+
+        <p className="mt-3 text-sm leading-6 text-gray-500">
+          Camera access is required before your interview can start.
+        </p>
+
+        <button
+        type="button"
+        onClick={requestCamera}
+        disabled={requestingCamera}
+        className="mt-6 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white"
+        >
+        {requestingCamera
+          ? "Starting camera..."
+          : "Enable Camera"}
+        </button>
+
+      {cameraError && (
+        <p className="mt-4 text-xs text-red-400">
+          {cameraError}
+        </p>
+      )}
+    </div>
+  </main>
+) : (
+    
+
+
     <main className="min-h-screen bg-[#05070D] text-white">
       <header className="border-b border-white/[0.10] bg-[#080B13]/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
@@ -278,16 +419,26 @@ export default function InterviewPage() {
             </div>
 
             <div className="flex flex-1 flex-col items-center justify-center">
-              <div className="relative mb-8">
-                <div className="absolute inset-[-18px] rounded-full bg-blue-500/[0.04] blur-xl" />
+              <div className="relative mb-6 w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.12] bg-black aspect-video">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-full w-full object-cover"
+              />
 
-                <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-blue-400/20 bg-gradient-to-br from-blue-500/15 to-transparent">
-                  <Sparkles
-                    size={42}
-                    className="text-blue-400"
-                  />
+              {!cameraEnabled && (
+                <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
+                  Camera is off
                 </div>
-              </div>
+              )}
+
+              
+
+
+            </div>
+
 
               <div className="max-w-md text-center">
                 <p className="text-sm leading-6 text-gray-400">
@@ -297,6 +448,9 @@ export default function InterviewPage() {
                 </p>
               </div>
 
+              
+
+             
               <button
                 type="button"
                 className="mt-8 flex items-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-2.5 text-sm text-gray-300 transition hover:border-white/20 hover:bg-white/[0.07]"
@@ -396,21 +550,20 @@ export default function InterviewPage() {
                 </div>
 
                 <button
-                  type="button"
-                  onClick={() =>
-                    setIsListening(!isListening)
-                  }
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition ${
-                    isListening
-                      ? "border-red-400/40 bg-red-500/10 text-red-400"
-                      : "border-blue-400/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/15"
-                  }`}
-                >
-                  {isListening ? (
-                    <MicOff size={19} />
-                  ) : (
-                    <Mic size={19} />
-                  )}
+                    type="button"
+                    onClick={toggleMic}
+                    disabled={!mediaStream}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition ${
+                      micEnabled
+                        ? "border-blue-400/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/15"
+                        : "border-red-400/40 bg-red-500/10 text-red-400"
+                    }`}
+                  >
+                    {micEnabled ? (
+                      <Mic size={19} />
+                    ) : (
+                      <MicOff size={19} />
+                    )}
                 </button>
               </div>
             </div>
