@@ -106,17 +106,14 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="mt-10 flex flex-col gap-3 border-t border-white/[0.07] pt-6 text-xs text-gray-700 sm:flex-row sm:items-center sm:justify-between">
-  <p>
-    © {new Date().getFullYear()} InterviewForge. All rights reserved.
-  </p>
+          <p>
+            © {new Date().getFullYear()} InterviewForge. All rights reserved.
+          </p>
 
-  <p>
-    Built by{" "}
-    <span className="font-medium text-gray-500">
-      Shoryan Agarwal
-    </span>
-  </p>
-</div>
+          <p>
+            Built for better interview preparation.
+          </p>
+        </div>
       </div>
     </footer>
   );
