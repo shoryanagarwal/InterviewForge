@@ -18,9 +18,10 @@ export default function InterviewPage() {
 
   const router = useRouter();
   const { interviewId } = useParams();
-
+  const [finishingInterview, setFinishingInterview] = useState(false);
   const videoRef =useRef<HTMLVideoElement | null> (null);
   const [mediaStream,setmediaaStream]=useState<MediaStream | null>(null);
+  const [timeleft,setTimeLeft]=useState(0);
 
   const [cameraEnabled,setcameraEnabled]=useState(false);
   const [cameraError,setcameraError]=useState<string | null>(null);
@@ -48,6 +49,54 @@ export default function InterviewPage() {
 
 
   // Fetch interview
+
+  const finishInterview=async()=>{
+
+    if(finishingInterview){
+      return
+    }
+
+      try{
+          setFinishingInterview(true);
+
+          const response= await fetch(`/api/interview/${interviewId}/finish`,{
+            method:"POST",
+          })
+
+          const data=await response.json();
+
+          if(!response.ok){
+              throw new Error(data.message || "Failed to finish interview");
+          }
+
+
+          router.replace(`/interview/${interviewId}/result`);
+
+
+      }
+      catch(error){
+        console.error(error);
+        alert("Failed to finish interview. Please try again.");
+        setFinishingInterview(false);
+
+      }
+
+
+  }
+
+
+  useEffect(() => {
+  if (
+    timeleft === 0 &&
+    cameraReady &&
+    interview &&
+    !finishingInterview
+  ) {
+    finishInterview();
+  }
+}, [timeleft, cameraReady, interview, finishingInterview]);
+
+
   useEffect(() => {
     const fetchInterview = async () => {
       try {
@@ -93,6 +142,75 @@ export default function InterviewPage() {
       setAnswers(currentQuestion.userAnswer || "");
     }
   }, [currentQuestionIndex, currentQuestion]);
+
+
+ const getInterviewTime = (
+  interviewType: string,
+  difficulty: string,
+  questionCount: number
+) => {
+  let timePerQuestion = 3 * 60;
+
+  if (interviewType.toUpperCase() === "CODING") {
+    switch (difficulty.toUpperCase()) {
+      case "EASY":
+        timePerQuestion = 10 * 60;
+        break;
+      case "MEDIUM":
+        timePerQuestion = 20 * 60;
+        break;
+      case "HARD":
+        timePerQuestion = 30 * 60;
+        break;
+    }
+  } else {
+    switch (difficulty.toUpperCase()) {
+      case "EASY":
+        timePerQuestion = 2 * 60;
+        break;
+      case "MEDIUM":
+        timePerQuestion = 3 * 60;
+        break;
+      case "HARD":
+        timePerQuestion = 5 * 60;
+        break;
+    }
+  }
+
+  return timePerQuestion * questionCount;
+};
+
+
+  useEffect(() => {
+  if (!interview) return;
+
+  const totalTime = getInterviewTime(
+    interview.interviewType,
+    interview.difficulty,
+    interview.questions.length
+  );
+
+  setTimeLeft(totalTime);
+}, [interview]);
+
+
+useEffect(() => {
+  if (!cameraReady || timeleft <= 0) return;
+
+  const timer = setInterval(() => {
+    setTimeLeft((prevTime) => {
+      if (prevTime <= 1) {
+        return 0;
+      }
+
+      return prevTime - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [cameraReady]);
+
+
 
 
   const toggleMic=()=>{
@@ -279,6 +397,34 @@ export default function InterviewPage() {
     );
   }
 
+
+  if (finishingInterview) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#05070D] text-white">
+      <div className="w-full max-w-md rounded-2xl border border-white/[0.12] bg-[#0B0F1A] p-8 text-center shadow-xl shadow-black/20">
+        
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-blue-400/20 bg-blue-500/10">
+          <Clock3
+            size={22}
+            className="animate-pulse text-blue-400"
+          />
+        </div>
+
+        <h1 className="mt-5 text-xl font-semibold">
+          Submitting Interview
+        </h1>
+
+        <p className="mt-3 text-sm leading-6 text-gray-500">
+          Your interview is being submitted and evaluated.
+          Please wait while we prepare your results.
+        </p>
+
+      </div>
+    </main>
+  );
+}
+
+
   if (!interview || !currentQuestion) {
     return (
 
@@ -364,7 +510,10 @@ export default function InterviewPage() {
                 size={15}
                 className="text-blue-400"
               />
-              <span>18:42</span>
+              <span>
+              {String(Math.floor(timeleft / 60)).padStart(2, "0")}:
+              {String(timeleft % 60).padStart(2, "0")}
+            </span>
             </div>
           </div>
         </div>

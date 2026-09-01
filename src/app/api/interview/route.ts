@@ -6,9 +6,10 @@ import {ResumeText} from "@/lib/getResumeText"
 
 
 export async function POST(req: Request){
-
+    console.log("Interview creation request received");
     try{
         const session = await auth();
+        console.log(session)
 
         if(!session?.user?.id){
             return NextResponse.json(
