@@ -21,7 +21,7 @@ export default function InterviewPage() {
   const [finishingInterview, setFinishingInterview] = useState(false);
   const videoRef =useRef<HTMLVideoElement | null> (null);
   const [mediaStream,setmediaaStream]=useState<MediaStream | null>(null);
-  const [timeleft,setTimeLeft]=useState(0);
+  const [timeleft,setTimeLeft]=useState(-1);
 
   const [cameraEnabled,setcameraEnabled]=useState(false);
   const [cameraError,setcameraError]=useState<string | null>(null);
@@ -122,6 +122,86 @@ export default function InterviewPage() {
 
     fetchInterview();
   }, [interviewId]);
+
+
+const requestCamera=async()=>{
+  console.log("Requesting camera access...");
+
+      try{
+        setRequestingCamera(true);
+        setcameraError(null);
+
+        const camerastream=await navigator.mediaDevices.getUserMedia({
+          video:true
+        })
+        
+        console.log("Camera stream received", camerastream);
+        let micTrack: MediaStreamTrack | null = null;
+
+        try{
+          const micStream=await navigator.mediaDevices.getUserMedia({
+            audio:true
+          })
+
+          micTrack=micStream.getAudioTracks()[0]?? null;
+        }
+        catch(error){
+          console.error("Microphone error:",error);
+          setMicEnabled(false);
+        }
+
+        const tracks=[
+          ...camerastream.getVideoTracks(),
+          ...(micTrack ? [micTrack] : [])
+        ]
+
+
+        const stream=new MediaStream(tracks);
+
+        setmediaaStream(stream);
+        console.log("Media stream state set");
+        setcameraEnabled(true);
+        setMicEnabled(Boolean(micTrack));
+        setCameraReady(true);
+        
+
+
+      }
+      catch(error){
+        console.error("Camera error:",error);
+        setCameraReady(false);
+        setcameraError("Failed to access camera. Please check your permissions and try again.");
+
+      }
+      finally{
+        setRequestingCamera(false);
+      }
+
+
+  }
+
+
+
+
+
+  useEffect(() => {
+  const checkCameraPermission = async () => {
+    try {
+      const permission = await navigator.permissions.query({
+        name: "camera" as PermissionName,
+      });
+
+      if (permission.state === "granted") {
+        console.log("Camera permission already granted");
+        requestCamera();
+      }
+    } catch (error) {
+      console.error("Camera permission check failed:", error);
+    }
+  };
+
+  checkCameraPermission();
+}, []);
 
 
 
@@ -227,58 +307,7 @@ useEffect(() => {
   }
 
  
-  const requestCamera=async()=>{
-
-      try{
-        setRequestingCamera(true);
-        setcameraError(null);
-
-        const camerastream=await navigator.mediaDevices.getUserMedia({
-          video:true
-        })
-
-        let micTrack: MediaStreamTrack | null = null;
-
-        try{
-          const micStream=await navigator.mediaDevices.getUserMedia({
-            audio:true
-          })
-
-          micTrack=micStream.getAudioTracks()[0]?? null;
-        }
-        catch(error){
-          console.error("Microphone error:",error);
-          setMicEnabled(false);
-        }
-
-        const tracks=[
-          ...camerastream.getVideoTracks(),
-          ...(micTrack ? [micTrack] : [])
-        ]
-
-
-        const stream=new MediaStream(tracks);
-
-        setmediaaStream(stream);
-        setcameraEnabled(true);
-        setMicEnabled(Boolean(micTrack));
-        setCameraReady(true);
-
-      }
-      catch(error){
-        console.error("Camera error:",error);
-        setCameraReady(false);
-        setcameraError("Failed to access camera. Please check your permissions and try again.");
-
-      }
-      finally{
-        setRequestingCamera(false);
-      }
-
-
-  }
-
-
+  
 
 
 

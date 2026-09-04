@@ -1,34 +1,73 @@
+"use client";
+
 import { ArrowRight, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const interviews = [
-  {
-    role: "Backend Developer",
-    difficulty: "Medium",
-    questions: 10,
-    score: 82,
-    status: "Completed",
-    date: "Today",
-  },
-  {
-    role: "React Developer",
-    difficulty: "Hard",
-    questions: 15,
-    score: 71,
-    status: "Completed",
-    date: "Yesterday",
-  },
-  {
-    role: "Full Stack Developer",
-    difficulty: "Easy",
-    questions: 10,
-    score: null,
-    status: "In Progress",
-    date: "2 days ago",
-  },
-];
+
 
 export default function RecentInterviews() {
+  const [interviews, setInterviews] = useState([
+     {
+    id: "",
+    role: "",
+    difficulty: "",
+    numberOfQuestions: 0,
+    score: null,
+    status: "",
+    createdAt: "",
+  },
+  ]);
+
+  function getRelativeDate(date: string) {
+  const createdAt = new Date(date);
+  const now = new Date();
+
+  const diffInDays = Math.floor(
+    (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffInDays === 0) return "Today";
+  if (diffInDays === 1) return "Yesterday";
+
+  return `${diffInDays} days ago`;
+}
+
+
+
+  useEffect(()=>{
+      
+    async function fetchInterviews(){
+
+      try{
+          const response=await fetch("/api/dashboard/recent-interviews");
+          if(!response.ok){
+            throw new Error("Failed to fetch recent interviews");
+          }
+
+          const data=await response.json();
+          setInterviews(data);
+
+      }
+      catch(error){
+        console.error("Error fetching recent interviews:",error);
+
+      }
+
+
+
+
+    }
+
+
+    fetchInterviews();
+
+
+  },[])
+
+
+  
+  
   return (
     <section className="mx-auto max-w-7xl px-6 pb-20">
       <div className="mb-6 flex items-end justify-between">
@@ -41,7 +80,7 @@ export default function RecentInterviews() {
         </div>
 
         <Link
-          href="/interview/history"
+          href="/history"
           className="group flex items-center gap-1 text-sm text-blue-400 transition hover:text-blue-300"
         >
           View all
@@ -80,7 +119,7 @@ export default function RecentInterviews() {
 
               <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                 <Clock3 size={12} />
-                {interview.date}
+                {getRelativeDate(interview.createdAt)}
               </div>
             </div>
 
@@ -99,7 +138,7 @@ export default function RecentInterviews() {
 
             {/* Questions */}
             <span className="text-sm text-gray-400">
-              {interview.questions}
+              {interview.numberOfQuestions} Questions
             </span>
 
             {/* Score */}
